@@ -1,28 +1,23 @@
 import { setLocalList } from './../utils/localStorage';
+
 function peopleController() {
-    console.log('Se cargó personajes y su controlador');
 
-
-
-
-    function getData(url, cbk) {
-        $.ajax(url).done(function (data) {
-            cbk(null, data)
-        }).fail(function (error) {
-            cbk(error);
-        });
-    }
-
-    getData("https://swapi.co/api/people", showData);
+    getData('https://swapi.co/api/people');
 
     var number = 1;
-    var verMasBtn = $('#verMasBtn');
 
+    function getData(url) {
+        var request = $.ajax({
+            url: url,
+            method: 'GET'
+        });
 
-    function showData(error, data) {
-        if (!error) {
-            for (let i = 0; i < data.results.length; i++) {
-                const element = data.results[i];
+        request.done(function getDataNext(data) {
+            var peopleResults = data.results;
+            var nextData = data.next;
+
+            for (var i = 0; i < peopleResults.length; i++) {
+                const element = peopleResults[i];
 
                 function spanishGender() {
                     var spanishGender = `${element.gender}`;
@@ -106,41 +101,48 @@ function peopleController() {
                     return spanishEyes;
                 }
 
-                $('#myTable').append(` "<tr>" + "<td>${number}</td>" + 
-            "<td>${element.name}</td>" +
-            "<td>${spanishGender()}</td>" +
-            "<td>${spanishHeight()}</td>" +
-            "<td>${spanishMass()}</td>" +
-            "<td>${spanishEyes()}</td>" +
-            "<td><button type="button" class="btn btn-outline-success  btn-sm">Guardar</button></td>"
-                      "</tr>"`);
-
+                $('#myTable').append(`<tr id="${element.url}">
+                <th scope="row">${number}
+                <td>${element.name}</td>
+                <td>${spanishGender()}</td>
+                <td>${spanishHeight()}</td>
+                <td>${spanishMass()}</td>
+                <td>${spanishEyes()}</td>
+                <td><button type="button" class="btn btn-outline-success  btn-sm">Guardar</button>
+                </td></tr>`);
 
                 number++
+
             }
-            var next = console.log(data.next)
-            verMasBtn.click(function () {
-                if (data.next) {
-                    
-                        (getData(data.next, showData));
-                }
-            })
 
-        }
+            if (nextData === null) {
+                $('#verMasBtn').attr('disabled', true);
+            } else {
+                $('#verMasBtn').one('click', function () {
+                    getData(nextData);
+                });
+            }
+            console.log(nextData);
+        });
 
-
-
-        // setLocalList();
-        // function showData(error, data) {
-        //     if (!error) {
-        //         console.log(data);
-        //     }
-        // }
-
+        request.fail(function (error) {
+            console.log('Error: ', error);
+        });
     }
+    
+    $('#myTable').on('click', '.btn', function () {
+        var row = $(this).closest('tr')
+        var numberID = $(row).attr("id")
+        var name = row.find('td').eq(0).text();
+        var gender = row.find('td').eq(1).text();
+        var height = row.find('td').eq(2).text();
+        var mass = row.find('td').eq(3).text();
+        var eyes = row.find('td').eq(4).text();
 
-
-
+        setLocalList('listPeople', { name: name, gender: gender, height: height, mass: mass, eyes: eyes, id: numberID })
+        $(row).remove();
+    })
 
 }
+
 export default peopleController;
